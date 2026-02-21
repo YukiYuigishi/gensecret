@@ -9,7 +9,10 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"os"
 	"strings"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func generateSecret(length int, encoding string, r io.Reader) (string, error) {
@@ -37,10 +40,30 @@ func generateSecret(length int, encoding string, r io.Reader) (string, error) {
 	}
 }
 
+func generateBcryptHash(password string, cost int) ([]byte, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), cost)
+	if err != nil {
+		return nil, fmt.Errorf("generate hash failed: %w", err)
+	}
+
+	return hash, nil
+}
 func main() {
 	length := flag.Int("n", 32, "number of random bytes to generate")
 	encoding := flag.String("enc", "hex", "output encoding: hex|base64|base64url")
+	genBycrypt := flag.Bool("bcrypt", false, "hash password by bcrypt")
+
 	flag.Parse()
+
+	if *genBycrypt {
+		out, err := generateBcryptHash(os.Args[2], 12)
+		if err != nil {
+			log.Fatalf("%v", err)
+		}
+		fmt.Println(string(out))
+
+		return
+	}
 
 	out, err := generateSecret(*length, *encoding, rand.Reader)
 	if err != nil {
